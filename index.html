@@ -21,6 +21,10 @@
             padding: 8px;
             margin: 10px 0;
         }
+        #passwordPrompt {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -31,13 +35,23 @@
     <input type="text" id="nameInput" placeholder="Enter your name">
     <button onclick="pickSecretSanta()">Pick Secret Santa</button>
     <button onclick="showWhoIGot()">Show Who I Got</button>
-    <button onclick="resetData()">Reset Data</button> <!-- Reset Button -->
+
+    <!-- Reset button always shown for Justin Oshima -->
+    <button id="resetBtn" onclick="askForPassword()">Reset Data</button>
 
     <div id="result" class="hidden"></div>
 
+    <!-- Password Prompt for Reset -->
+    <div id="passwordPrompt">
+        <label for="passwordInput">Enter Password:</label>
+        <input type="password" id="passwordInput" placeholder="Enter password">
+        <button onclick="verifyPassword()">Submit</button>
+    </div>
+
     <script>
-        const participants = ["Justin", "Jaryl", "Kyle", "Yuma", "Mika", "Nicole", "Alina", "Yosei", "Andrei", "Ceejay", "Kazuya", "Jones", "Jun", "Versie"];
+        const participants = ["Justin Oshima", "Jaryl", "Kyle", "Yuma", "Mika", "Nicole", "Alina", "Yosei", "Andrei", "Ceejay", "Kazuya", "Jones", "Jun", "Versie"];
         let assignments = [];
+        const myName = "Justin Oshima"; // Replace with your name
 
         function pickSecretSanta() {
             // Check if the user has already picked
@@ -82,15 +96,16 @@
         }
 
         function showWhoIGot() {
-            // Check if the user has picked
-            if (!localStorage.getItem('hasPicked')) {
-                alert("You haven't picked your Secret Santa yet!");
+            const nameInput = document.getElementById('nameInput').value.trim();
+
+            if (nameInput === "") {
+                alert("Please enter your name!");
                 return;
             }
 
-            const nameInput = document.getElementById('nameInput').value.trim();
-            if (nameInput === "") {
-                alert("Please enter your name!");
+            // Check if the user has already picked
+            if (!localStorage.getItem('hasPicked')) {
+                alert("You haven't picked your Secret Santa yet!");
                 return;
             }
 
@@ -100,7 +115,23 @@
             if (assignmentForName) {
                 alert(`You got: ${assignmentForName.receiver}`);
             } else {
-                alert("Assignment not found.");
+                alert("Assignment not found. Please pick your Secret Santa first.");
+            }
+        }
+
+        function askForPassword() {
+            // Show the password prompt for resetting the data
+            document.getElementById('passwordPrompt').style.display = 'block';
+        }
+
+        function verifyPassword() {
+            const enteredPassword = document.getElementById('passwordInput').value.trim();
+            const correctPassword = "Justin123@";
+
+            if (enteredPassword === correctPassword) {
+                resetData();
+            } else {
+                alert("Incorrect password. You are not authorized to reset the data.");
             }
         }
 
@@ -113,6 +144,8 @@
             alert("Data has been reset. You can now pick a new Secret Santa.");
             document.getElementById('result').classList.add('hidden');
             document.getElementById('nameInput').value = "";
+            document.getElementById('passwordInput').value = "";
+            document.getElementById('passwordPrompt').style.display = 'none';
         }
     </script>
 </body>
