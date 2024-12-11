@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        .hidden {
+            display: none;
+        }
+        input {
+            padding: 8px;
+            margin: 10px 0;
+            width: 80%;
+            max-width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        /* Styling for the password prompt */
+        #passwordPrompt {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .popup-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+        /* Adjust button sizes for mobile */
+        @media screen and (max-width: 600px) {
+            input, button {
+                width: 90%;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Secret Santa Picker</h1>
+    <p>Enter your name to see your Secret Santa assignment!</p>
+
+    <label for="nameInput">Your Name:</label>
+    <input type="text" id="nameInput" placeholder="Enter your name">
+    <button onclick="pickSecretSanta()">Pick Secret Santa</button>
+    <button onclick="showWhoIGot()">Show Who I Got</button>
+
+    <!-- Reset button always shown for Justin Oshima -->
+    <button id="resetBtn" onclick="askForPassword()">Reset Data</button>
+
+    <div id="result" class="hidden"></div>
+
+    <!-- Password Prompt for Reset -->
+    <div id="passwordPrompt">
+        <div class="popup-content">
+            <label for="passwordInput">Enter Password:</label>
+            <input type="password" id="passwordInput" placeholder="Enter password">
+            <button onclick="verifyPassword()">Submit</button>
+        </div>
+    </div>
+
+    <script>
+        const participants = ["Justin Oshima", "Jaryl", "Kyle", "Yuma", "Mika", "Nicole", "Alina", "Yosei", "Andrei", "Ceejay", "Kazuya", "Jones", "Jun", "Versie"];
+        let assignments = [];
+        const myName = "Justin Oshima"; // Replace with your name
+
+        function pickSecretSanta() {
+            // Check if the user has already picked
+            if (localStorage.getItem('hasPicked')) {
+                alert("You have already picked your Secret Santa! You can't pick again.");
+                return;
+            }
+
+            const nameInput = document.getElementById('nameInput').value.trim();
+            if (nameInput === "") {
+                alert("Please enter your name!");
+                return;
+            }
+
+            if (!participants.includes(nameInput)) {
+                alert("Name not found in the participants list!");
+                return;
+            }
+
+            // Shuffle the participants list and assign Secret Santa
+            const remainingReceivers = [...participants];
+            assignments = participants.map(giver => {
+                const possibleReceivers = remainingReceivers.filter(receiver => receiver !== giver);
+                const randomIndex = Math.floor(Math.random() * possibleReceivers.length);
+                const receiver = possibleReceivers[randomIndex];
+
+                remainingReceivers.splice(remainingReceivers.indexOf(receiver), 1);
+
+                return { giver, receiver };
+            });
+
+            // Find the assignment for the entered name
+            const resultDiv = document.getElementById('result');
+            const assignmentForName = assignments.find(assignment => assignment.giver === nameInput);
+
+            resultDiv.innerHTML = `<h2>Your Secret Santa Assignment:</h2><p>${assignmentForName.giver} → ${assignmentForName.receiver}</p>`;
+            resultDiv.classList.remove('hidden');
+
+            // Store the assignment in localStorage to prevent picking again and show later
+            localStorage.setItem('hasPicked', 'true');
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+        }
+
+        function showWhoIGot() {
+            const nameInput = document.getElementById('nameInput').value.trim();
+
+            if (nameInput === "") {
+                alert("Please enter your name!");
+                return;
+            }
+
+            // Check if the user has already picked
+            if (!localStorage.getItem('hasPicked')) {
+                alert("You haven't picked your Secret Santa yet!");
+                return;
+            }
+
+            const assignments = JSON.parse(localStorage.getItem('assignments'));
+            const assignmentForName = assignments.find(assignment => assignment.giver === nameInput);
+
+            if (assignmentForName) {
+                alert(`You got: ${assignmentForName.receiver}`);
+            } else {
+                alert("Assignment not found. Please pick your Secret Santa first.");
+            }
+        }
+
+        function askForPassword() {
+            // Show the password prompt for resetting the data
+            document.getElementById('passwordPrompt').style.display = 'flex';
+        }
+
+        function verifyPassword() {
+            const enteredPassword = document.getElementById('passwordInput').value.trim();
+            const correctPassword = "Justin123@";
+
+            if (enteredPassword === correctPassword) {
+                resetData();
+            } else {
+                alert("Incorrect password. You are not authorized to reset the data.");
+            }
+        }
+
+        function resetData() {
+            // Clear the localStorage to reset everything
+            localStorage.removeItem('hasPicked');
+            localStorage.removeItem('assignments');
+
+            // Reset the UI
+            alert("Data has been reset. You can now pick a new Secret Santa.");
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('nameInput').value = "";
+            document.getElementById('passwordInput').value = "";
+            document.getElementById('passwordPrompt').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
