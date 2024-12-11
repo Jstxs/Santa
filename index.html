@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Santa Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        .hidden {
+            display: none;
+        }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js"></script>
+    <script>
+        // Firebase configuration object
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkZnM9hHQWXFlwp_rWqoSrIrNXwD6PMSs",
+            authDomain: "secret-santa-picker-f6cde.firebaseapp.com",
+            projectId: "secret-santa-picker-f6cde",
+            storageBucket: "secret-santa-picker-f6cde.appspot.com",
+            messagingSenderId: "733987896997",
+            appId: "1:733987896997:web:355957d9d2a041f8ec574c",
+            measurementId: "G-JMBR7ZZRXD"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        const participants = ["Justin", "Jaryl", "Kyle", "Yuma", "Mika", "Nicole", "Alina", "Yosei", "Andrei", "Ceejay", "Kazuya", "Jones", "Jun", "Versie"];
+        const coderPassword = 'Justin123@';
+
+        function showLoadingScreen(show) {
+            const loadingDiv = document.getElementById('loading');
+            loadingDiv.style.display = show ? 'flex' : 'none';
+        }
+
+        async function pickSecretSanta() {
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+
+            if (!name || !participants.includes(name)) {
+                alert('Please enter a valid name from the participants list.');
+                return;
+            }
+
+            showLoadingScreen(true);
+
+            try {
+                const docRef = db.collection('secretSanta').doc(name);
+                const doc = await docRef.get();
+
+                if (doc.exists) {
+                    showLoadingScreen(false);
+                    alert('Huy, gago wag kang mangdaya hahaha');
+                    return;
+                }
+
+                const alreadyChosen = await getAlreadyChosen();
+                const availableReceivers = participants.filter(person => person !== name && !alreadyChosen.includes(person));
+
+                if (availableReceivers.length === 0) {
+                    showLoadingScreen(false);
+                    alert('No available participants left to assign.');
+                    return;
+                }
+
+                const randomIndex = Math.floor(Math.random() * availableReceivers.length);
+                const receiver = availableReceivers[randomIndex];
+
+                await docRef.set({ receiver });
+                await db.collection('alreadyChosen').doc(receiver).set({ chosen: true });
+
+                showLoadingScreen(false);
+                alert(`You got: ${receiver}`);
+            } catch (error) {
+                showLoadingScreen(false);
+                console.error('Error picking Secret Santa:', error);
+                alert('An error occurred. Please try again later.');
+            }
+        }
+
+        async function showWhoIGot() {
+            const nameInput = document.getElementById('nameInput');
+            const name = nameInput.value.trim();
+
+            if (!name || !participants.includes(name)) {
+                alert('Please enter a valid name from the participants list.');
+                return;
+            }
+
+            try {
+                const docRef = db.collection('secretSanta').doc(name);
+                const doc = await docRef.get();
+
+                if (!doc.exists) {
+                    alert('No assignment found for this name.');
+                } else {
+                    alert(`You got: ${doc.data().receiver}`);
+                }
+            } catch (error) {
+                console.error('Error showing assignment:', error);
+                alert('An error occurred. Please try again later.');
+            }
+        }
+
+        async function getAlreadyChosen() {
+            try {
+                const snapshot = await db.collection('alreadyChosen').get();
+                return snapshot.docs.map(doc => doc.id);
+            } catch (error) {
+                console.error('Error retrieving already chosen:', error);
+                return [];
+            }
+        }
+
+        function verifyReset() {
+            const password = prompt('Enter the reset password:');
+            if (password === coderPassword) {
+                resetData();
+            } else {
+                alert('Incorrect password.');
+            }
+        }
+
+        async function resetData() {
+            try {
+                const santaSnapshot = await db.collection('secretSanta').get();
+                santaSnapshot.forEach(doc => doc.ref.delete());
+
+                const chosenSnapshot = await db.collection('alreadyChosen').get();
+                chosenSnapshot.forEach(doc => doc.ref.delete());
+
+                alert('Data has been reset.');
+            } catch (error) {
+                console.error('Error resetting data:', error);
+                alert('An error occurred while resetting.');
+            }
+        }
+
+        // Add event listeners for buttons
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelector('button[onclick="pickSecretSanta()"]').addEventListener('click', pickSecretSanta);
+            document.querySelector('button[onclick="showWhoIGot()"]').addEventListener('click', showWhoIGot);
+            document.getElementById('resetButton').addEventListener('click', verifyReset);
+        });
+    </script>
+</head>
+<body>
+    <div id="loading">Loading...</div>
+
+    <h1>Secret Santa Picker</h1>
+    <p>Click the button below to shuffle and assign Secret Santa pairs!</p>
+    <div>
+        <input type="text" id="nameInput" placeholder="Enter your name">
+        <button id="pickButton">Pick Secret Santa</button>
+        <button id="showButton">Show Who I Got</button>
+    </div>
+    <button id="resetButton">Reset</button>
+    <div id="result" class="hidden"></div>
+</body>
+</html>
